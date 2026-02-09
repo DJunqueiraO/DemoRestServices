@@ -4,6 +4,7 @@ import java.util.Optional;
 
 import org.springframework.stereotype.Service;
 
+import web.djunqueirao.demo_rest_service.adapters.infraescructure.Jsonable;
 import web.djunqueirao.demo_rest_service.application.ports.DemoRepositoryPort;
 import web.djunqueirao.demo_rest_service.domain.Demo;
 
@@ -28,11 +29,12 @@ public class DemoService {
     	return demoRepositoryPort.findById(id);
     }
 
-    public Demo put(Demo demo) {
+    public Demo put(int id, Demo demo) {
+    	demo.setId(id);
     	return demoRepositoryPort.save(demo);
     }
 
-    public void delete(Demo demo) {
-    	demoRepositoryPort.delete(demo);
+    public void delete(int id) {
+    	demoRepositoryPort.delete(new Demo().setId(id));
     }
 }

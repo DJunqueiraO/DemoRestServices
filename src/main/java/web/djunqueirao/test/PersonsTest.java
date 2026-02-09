@@ -9,6 +9,7 @@ import org.junit.jupiter.api.TestInstance;
 import com.github.djunqueirao.dapi.request.DapiRequestManager;
 import com.github.djunqueirao.dapi.request.DapiRequestResponse;
 
+import web.djunqueirao.demo_rest_service.adapters.infraescructure.Jsonable;
 import web.djunqueirao.demo_rest_service.domain.Demo;
 
 
@@ -40,9 +41,9 @@ class PersonsTest {
 	@DisplayName("Should post person")
 	void shouldPerformPost() {
 		final DapiRequestResponse persons = new DapiRequestManager(baseUrl)
-				.post(endPoint, demo.toString());
+				.post(endPoint, demo.toJson());
 		Assertions.assertNotNull(persons.getBody());
-		Assertions.assertEquals(200, persons.getStatus());
+		Assertions.assertEquals(201, persons.getStatus());
 		Assertions.assertNull(persons.getError());
 		Assertions.assertNull(persons.getMessage());
 	}
@@ -50,8 +51,10 @@ class PersonsTest {
 	@Test
 	@DisplayName("Should get person")
 	void shouldPerformGet() {
+		final Demo[] demos = Jsonable.fromJson(new DapiRequestManager(baseUrl).get(endPoint).getBody(), Demo[].class);
+		final int id = demos[0].getId();
 		final DapiRequestResponse persons = new DapiRequestManager(baseUrl)
-				.get(endPoint + "/1");
+				.get(endPoint + "/" + id);
 		Assertions.assertNotNull(persons.getBody());
 		Assertions.assertEquals(200, persons.getStatus());
 		Assertions.assertNull(persons.getError());
@@ -61,8 +64,10 @@ class PersonsTest {
 	@Test
 	@DisplayName("Should put person")
 	void shouldPerformPut() {
+		final Demo[] demos = Jsonable.fromJson(new DapiRequestManager(baseUrl).get(endPoint).getBody(), Demo[].class);
+		final int id = demos[0].getId();
 		final DapiRequestResponse persons = new DapiRequestManager(baseUrl)
-				.put(endPoint, demo.setName("test_put").toString());
+				.put(endPoint + "/" + id, demo.setName("test_put").toJson());
 		Assertions.assertNotNull(persons.getBody());
 		Assertions.assertEquals(200, persons.getStatus());
 		Assertions.assertNull(persons.getError());
@@ -72,10 +77,12 @@ class PersonsTest {
 	@Test
 	@DisplayName("Should delete person")
 	void shouldPerformDelete() {
+		final Demo[] demos = Jsonable.fromJson(new DapiRequestManager(baseUrl).get(endPoint).getBody(), Demo[].class);
+		final int id = demos[0].getId();
 		final DapiRequestResponse persons = new DapiRequestManager(baseUrl)
-				.delete(endPoint, demo.toString());
+				.delete(endPoint + "/" + id, demo.toJson());
 		Assertions.assertNotNull(persons.getBody());
-		Assertions.assertEquals(200, persons.getStatus());
+		Assertions.assertEquals(204, persons.getStatus());
 		Assertions.assertNull(persons.getError());
 		Assertions.assertNull(persons.getMessage());
 	}

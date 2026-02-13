@@ -17,82 +17,90 @@ DATABASE_URL = (
 engine = create_engine(DATABASE_URL, echo=False)
 SessionLocal = sessionmaker(bind=engine)
 
+class DemoController:
 
-@demo_controller.get("/")
-def get_all():
-    session = SessionLocal()
-    demos = session.query(DemoModel).all()
-    session.close()
+    @staticmethod
+    def from_tuple_list(of_name: list[list]) -> list[Demo]:
+        return list(
+            map(lambda demo: Demo.from_tuple(demo), of_name)
+        )
 
-    result = [Demo(id_=d.id, name=d.name) for d in demos]
-    return jsonify(result), 200
-
-
-@demo_controller.get("/<int:id_>")
-def get_by_id(id_):
-    session = SessionLocal()
-    demo = session.query(DemoModel).filter_by(id=id_).first()
-    session.close()
-
-    if not demo:
-        return jsonify({"error": "Demo not found"}), 404
-
-    return jsonify(Demo(id_=demo.id, name=demo.name)), 200
-
-
-@demo_controller.post("/")
-def create():
-    data = request.get_json()
-
-    if not data or "name" not in data:
-        return jsonify({"error": "Missing 'name' field"}), 400
-
-    session = SessionLocal()
-
-    demo = DemoModel(name=data["name"])
-    session.add(demo)
-    session.commit()
-    session.refresh(demo)
-    session.close()
-
-    return jsonify(Demo(id_=demo.id, name=demo.name)), 201
-
-
-@demo_controller.put("/<int:id_>")
-def update(id_):
-    data = request.get_json()
-
-    if not data:
-        return jsonify({"error": "Missing JSON body"}), 400
-
-    session = SessionLocal()
-    demo = session.query(DemoModel).filter_by(id=id_).first()
-
-    if not demo:
+    @staticmethod
+    @demo_controller.get("/")
+    def get_all():
+        session = SessionLocal()
+        demos = session.query(DemoModel).all()
         session.close()
-        return jsonify({"error": "Demo not found"}), 404
 
-    if "name" in data:
-        demo.name = data["name"]
+        result = [Demo(id_=d.id, name=d.name) for d in demos]
+        return jsonify(result), 200
 
-    session.commit()
-    session.refresh(demo)
-    session.close()
-
-    return jsonify(Demo(id_=demo.id, name=demo.name)), 200
-
-
-@demo_controller.delete("/<int:id_>")
-def delete(id_):
-    session = SessionLocal()
-    demo = session.query(DemoModel).filter_by(id=id_).first()
-
-    if not demo:
+    @staticmethod
+    @demo_controller.get("/<int:id_>")
+    def get_by_id(id_):
+        session = SessionLocal()
+        demo = session.query(DemoModel).filter_by(id=id_).first()
         session.close()
-        return jsonify({"error": "Demo not found"}), 404
 
-    session.delete(demo)
-    session.commit()
-    session.close()
+        if not demo:
+            return jsonify({"error": "Demo not found"}), 404
 
-    return jsonify({"message": "Deleted successfully"}), 200
+        return jsonify(Demo(id_=demo.id, name=demo.name)), 200
+
+    @staticmethod
+    @demo_controller.post("/")
+    def create():
+        data = request.get_json()
+
+        if not data or "name" not in data:
+            return jsonify({"error": "Missing 'name' field"}), 400
+
+        session = SessionLocal()
+
+        demo = DemoModel(name=data["name"])
+        session.add(demo)
+        session.commit()
+        session.refresh(demo)
+        session.close()
+
+        return jsonify(Demo(id_=demo.id, name=demo.name)), 201
+
+    @staticmethod
+    @demo_controller.put("/<int:id_>")
+    def update(id_):
+        data = request.get_json()
+
+        if not data:
+            return jsonify({"error": "Missing JSON body"}), 400
+
+        session = SessionLocal()
+        demo = session.query(DemoModel).filter_by(id=id_).first()
+
+        if not demo:
+            session.close()
+            return jsonify({"error": "Demo not found"}), 404
+
+        if "name" in data:
+            demo.name = data["name"]
+
+        session.commit()
+        session.refresh(demo)
+        session.close()
+
+        return jsonify(Demo(id_=demo.id, name=demo.name)), 200
+
+    @staticmethod
+    @demo_controller.delete("/<int:id_>")
+    def delete(id_):
+        session = SessionLocal()
+        demo = session.query(DemoModel).filter_by(id=id_).first()
+
+        if not demo:
+            session.close()
+            return jsonify({"error": "Demo not found"}), 404
+
+        session.delete(demo)
+        session.commit()
+        session.close()
+
+        return jsonify({"message": "Deleted successfully"}), 200

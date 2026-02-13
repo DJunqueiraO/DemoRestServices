@@ -1,0 +1,150 @@
+from flask import request
+
+from connection.connection import Connection
+from src.orders.order import Order
+from utils.query import Query
+from utils.response import Response
+from utils.table import Table
+
+orders = Table(
+    'orders',
+    """
+        id SERIAL PRIMARY KEY,
+        name VARCHAR(255) NOT NULL
+    """
+)
+
+
+class Orders:
+
+    def from_tuple_list(of_name: list[list]) -> list[Order]:
+        return list(
+            map(lambda order: Order.from_tuple(order), of_name)
+        )
+
+    @orders.get(f'/{orders.get_name()}')
+    def get_all():
+        connection = Connection()
+
+        def call(cursor):
+            cursor.execute(orders.create())
+            cursor.execute(
+                Query(orders.get_name()).select()
+            )
+            orders_ = Orders.from_tuple_list(cursor.fetchall())
+            return Response().set_body(orders_).ok()
+
+        return connection.perform(call)
+
+    @orders.get(f'/{orders.get_name()}/<order_id>')
+    def select_order(order_id):
+        connection = Connection()
+
+        def call():
+            cursor = connection.get_cursor()
+            cursor.execute(orders.create())
+            cursor.execute(
+                Query(orders.get_name())
+                .select(
+                    where=('id',)
+                ),
+                (order_id,)
+            )
+            orders_ = Orders.from_tuple_list(cursor.fetchall())
+            if len(orders_) == 0:
+                return Response().not_found()
+            order = orders_[0]
+            return Response().set_body(orders_[0]).ok()
+
+        return connection.perform(call)
+
+    @orders.post(f'/{orders.get_name()}')
+    def post_order():
+        connection = Connection()
+        body = Order.from_dict(request.get_json()).del_id()
+
+        def call():
+            cursor = connection.get_cursor()
+            cursor.execute(orders.create())
+            cursor.execute(
+                Query(orders.get_name())
+                .insert(
+                    columns=tuple(body.keys()),
+                    returning=tuple(Order().keys())
+                ),
+                tuple(body.values())
+            )
+            order = Order.from_tuple(cursor.fetchone())
+            return Response().set_body(order).ok()
+
+        return connection.perform(call)
+
+    @orders.put(f'/{orders.get_name()}')
+    def update_orders():
+        connection = Connection()
+        body = Order.from_dict(request.get_json())
+
+        def call():
+            cursor = connection.get_cursor()
+            cursor.execute(orders.create())
+            cursor.execute(
+                Query(orders.get_name())
+                .update(
+                    columns=('name',),
+                    where=('id',),
+                    returning=tuple(Order().keys())
+                ),
+                (body.get_name(), body.get_id())
+            )
+            order = Order.from_tuple(cursor.fetchone())
+            # order.select_products()
+            return Response().set_body(order).created()
+
+        return connection.perform(call)
+
+    @orders.delete(f'/{orders.get_name()}')
+    def delete_orders():
+        connection = Connection()
+        body = Order.from_dict(request.get_json())
+
+        def call():
+            cursor = connection.get_cursor()
+            cursor.execute(orders.create())
+            cursor.execute(
+                Query(orders.get_name())
+                .delete(
+                    where=('id',),
+                    returning=tuple(Order().keys())
+                ),
+                (body.get_id(),)
+            )
+            orders_ = Orders.from_tuple_list(cursor.fetchall())
+            if len(orders_) == 0:
+                return Response().not_found()
+            order = orders_[0]
+            return Response().set_body(order).created()
+
+        return connection.perform(call)
+
+    @orders.delete(f'/{orders.get_name()}/<order_id>')
+    def delete_orders_by_id(order_id):
+        connection = Connection()
+
+        def call():
+            cursor = connection.get_cursor()
+            cursor.execute(orders.create())
+            cursor.execute(
+                Query(orders.get_name())
+                .delete(
+                    where=('id',),
+                    returning=('*',)
+                ),
+                (order_id,)
+            )
+            orders_ = Orders.from_tuple_list(cursor.fetchall())
+            if len(orders_) == 0:
+                return Response().not_found()
+            order = orders_[0]
+            return Response().set_body(order).created()
+
+        return connection.perform(call)

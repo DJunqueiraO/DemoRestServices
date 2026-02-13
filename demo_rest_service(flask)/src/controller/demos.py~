@@ -1,0 +1,92 @@
+from flask import Blueprint, request, jsonify
+
+from connection.connection import Connection
+from src.controller.demo import Demo
+
+demos = Blueprint('demos', __name__, url_prefix="/demos")
+
+database: list[Demo] = []
+next_id = 1
+
+@demos.get("/")
+def get_all():
+    def query(cursor):
+        cursor.execute("SELECT id, name FROM demo")
+        rows = cursor.fetchall()
+        return [Demo.from_tuple(row) for row in rows]
+    result = Connection().perform(query)
+    return jsonify(result), 200
+
+@demos.get("/<int:id_>")
+def get_by_id(id_):
+    def query(cursor):
+        cursor.execute("SELECT id, name FROM demo WHERE id = %s", (id_,))
+        row = cursor.fetchone()
+        return Demo.from_tuple(row) if row else None
+
+    result = Connection().perform(query)
+
+    if result is None:
+        return jsonify({"error": "Demo not found"}), 404
+
+    return jsonify(result), 200
+
+@demos.post("/")
+def create():
+    data = request.get_json()
+
+    if not data or "name" not in data:
+        return jsonify({"error": "Missing 'name' field"}), 400
+
+    def query(cursor):
+        cursor.execute(
+            "INSERT INTO demo (name) VALUES (%s)",
+            (data["name"],)
+        )
+        new_id = cursor.lastrowid
+        return Demo(id_=new_id, name=data["name"])
+
+    result = Connection().perform(query)
+    return jsonify(result), 201
+
+@demos.put("/<int:id_>")
+def update(id_):
+    data = request.get_json()
+
+    if not data:
+        return jsonify({"error": "Missing JSON body"}), 400
+
+    def query(cursor):
+        cursor.execute("SELECT id FROM demo WHERE id = %s", (id_,))
+        if cursor.fetchone() is None:
+            return None
+
+        cursor.execute(
+            "UPDATE demo SET name = %s WHERE id = %s",
+            (data.get("name"), id_)
+        )
+        return Demo(id_=id_, name=data.get("name"))
+
+    result = Connection().perform(query)
+
+    if result is None:
+        return jsonify({"error": "Demo not found"}), 404
+
+    return jsonify(result), 200
+
+@demos.delete("/<int:id_>")
+def delete(id_):
+    def query(cursor):
+        cursor.execute("SELECT id FROM demo WHERE id = %s", (id_,))
+        if cursor.fetchone() is None:
+            return None
+
+        cursor.execute("DELETE FROM demo WHERE id = %s", (id_,))
+        return True
+
+    result = Connection().perform(query)
+
+    if result is None:
+        return jsonify({"error": "Demo not found"}), 404
+
+    return jsonify({"message": "Deleted successfully"}), 200

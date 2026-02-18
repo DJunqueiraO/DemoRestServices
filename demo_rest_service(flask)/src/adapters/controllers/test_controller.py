@@ -24,12 +24,6 @@ _test_service = TestService(TestRepository(SessionLocal()))
 class TestController:
 
     @staticmethod
-    def from_tuple_list(of_name: list[list]) -> list[Test]:
-        return list(
-            map(lambda test: Test.from_tuple(test), of_name)
-        )
-
-    @staticmethod
     @test_controller.get("/")
     def get_all():
         return jsonify(_test_service.find_all()), 200
@@ -40,7 +34,7 @@ class TestController:
         test = _test_service.find_by_id(id_)
 
         if not test:
-            return jsonify({"error": "Test not found"}), 404
+            return jsonify({"error": "not found"}), 404
 
         return test, 200
 
@@ -65,8 +59,10 @@ class TestController:
         if not body:
             return jsonify({"error": "Missing JSON body"}), 400
 
-        test = Test.from_dict(body)
-        _test_service.update(test)
+        test = _test_service.update(Test.from_dict(body))
+
+        if not test:
+            return jsonify({"error": "not found"}), 404
 
         return jsonify(test), 200
 
@@ -76,6 +72,6 @@ class TestController:
         test = _test_service.delete_by_id(id_)
 
         if not test:
-            return jsonify({"error": "Test not found"}), 404
+            return jsonify({"error": "not found"}), 404
 
         return jsonify({"message": "Deleted successfully"}), 200

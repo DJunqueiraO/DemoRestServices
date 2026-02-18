@@ -11,14 +11,7 @@ class Demo(dict[str, any]):
 
     @staticmethod
     def from_dict(d: dict):
-        return Demo(
-            d.get("id"),
-            d.get("name")
-        )
-
-    @staticmethod
-    def from_tuple(t: tuple):
-        return Demo(t[0], t[1])
+        return Demo(**d)
 
     def get_id(self):
         return self["id"]

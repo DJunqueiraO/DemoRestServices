@@ -24,12 +24,6 @@ _demo_service = DemoService(DemoRepository(SessionLocal()))
 class DemoController:
 
     @staticmethod
-    def from_tuple_list(of_name: list[list]) -> list[Demo]:
-        return list(
-            map(lambda demo: Demo.from_tuple(demo), of_name)
-        )
-
-    @staticmethod
     @demo_controller.get("/")
     def get_all():
         return jsonify(_demo_service.find_all()), 200
@@ -40,7 +34,7 @@ class DemoController:
         demo = _demo_service.find_by_id(id_)
 
         if not demo:
-            return jsonify({"error": "Demo not found"}), 404
+            return jsonify({"error": "not found"}), 404
 
         return demo, 200
 
@@ -65,8 +59,10 @@ class DemoController:
         if not body:
             return jsonify({"error": "Missing JSON body"}), 400
 
-        demo = Demo.from_dict(body)
-        _demo_service.update(demo)
+        demo = _demo_service.update(Demo.from_dict(body))
+
+        if not demo:
+            return jsonify({"error": "not found"}), 404
 
         return jsonify(demo), 200
 
@@ -76,6 +72,6 @@ class DemoController:
         demo = _demo_service.delete_by_id(id_)
 
         if not demo:
-            return jsonify({"error": "Demo not found"}), 404
+            return jsonify({"error": "not found"}), 404
 
         return jsonify({"message": "Deleted successfully"}), 200

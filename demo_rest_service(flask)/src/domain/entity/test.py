@@ -11,14 +11,7 @@ class Test(dict[str, any]):
 
     @staticmethod
     def from_dict(d: dict):
-        return Test(
-            d.get("id"),
-            d.get("name")
-        )
-
-    @staticmethod
-    def from_tuple(t: tuple):
-        return Test(t[0], t[1])
+        return Test(**d)
 
     def get_id(self):
         return self["id"]

@@ -1,10 +1,10 @@
 from sqlalchemy import Column, Integer, String
-from sqlalchemy.orm import declarative_base
 
-Base = declarative_base()
+from src.adapters.persistence.sqlalchemy.model.model import Model
 
-class DemoModel(Base):
-    __tablename__ = "demo"
+
+class TestModel(Model):
+    __tablename__ = "test"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     name = Column(String(255), nullable=False)

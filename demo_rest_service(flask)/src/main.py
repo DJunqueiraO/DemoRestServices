@@ -1,10 +1,11 @@
 from flask import Flask
 
-from connection.connection import get_database
-from src.controller.demo_controller import demo_controller
+from src.adapters.persistence.connection import get_database
+from src.adapters.controllers.demo_controller import demo_controller
+from src.adapters.controllers.test_controller import test_controller
 
 from sqlalchemy import create_engine
-from src.controller.demo_model import Base
+from src.adapters.persistence.sqlalchemy.model.model import Base
 
 
 def create_tables():
@@ -21,6 +22,7 @@ def create_tables():
 
 app = Flask(__name__)
 app.register_blueprint(demo_controller)
+app.register_blueprint(test_controller)
 
 
 if __name__ == '__main__':

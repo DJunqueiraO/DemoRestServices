@@ -2,9 +2,10 @@ from flask import Blueprint, request, jsonify
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy import create_engine
 
-from connection.connection import get_database
-from src.controller.demo import Demo
-from src.controller.demo_model import DemoModel
+from src.adapters.persistence.connection import get_database
+from src.adapters.persistence.sqlalchemy.repository.demo_repository import DemoRepository
+from src.application.services.demo_service import DemoService
+from src.domain.entity.demo import Demo
 
 demo_controller = Blueprint('demo_controller', __name__, url_prefix="/demos")
 
@@ -17,6 +18,9 @@ DATABASE_URL = (
 engine = create_engine(DATABASE_URL, echo=False)
 SessionLocal = sessionmaker(bind=engine)
 
+_demo_service = DemoService(DemoRepository(SessionLocal()))
+
+
 class DemoController:
 
     @staticmethod
@@ -28,24 +32,17 @@ class DemoController:
     @staticmethod
     @demo_controller.get("/")
     def get_all():
-        session = SessionLocal()
-        demos = session.query(DemoModel).all()
-        session.close()
-
-        result = [Demo(id_=d.id, name=d.name) for d in demos]
-        return jsonify(result), 200
+        return jsonify(_demo_service.find_all()), 200
 
     @staticmethod
     @demo_controller.get("/<int:id_>")
     def get_by_id(id_):
-        session = SessionLocal()
-        demo = session.query(DemoModel).filter_by(id=id_).first()
-        session.close()
+        demo = _demo_service.find_by_id(id_)
 
         if not demo:
             return jsonify({"error": "Demo not found"}), 404
 
-        return jsonify(Demo(id_=demo.id, name=demo.name)), 200
+        return demo, 200
 
     @staticmethod
     @demo_controller.post("/")
@@ -55,52 +52,30 @@ class DemoController:
         if not data or "name" not in data:
             return jsonify({"error": "Missing 'name' field"}), 400
 
-        session = SessionLocal()
+        demo = _demo_service.save(Demo.from_dict(data))
 
-        demo = DemoModel(name=data["name"])
-        session.add(demo)
-        session.commit()
-        session.refresh(demo)
-        session.close()
-
-        return jsonify(Demo(id_=demo.id, name=demo.name)), 201
+        return jsonify(demo), 201
 
     @staticmethod
     @demo_controller.put("/<int:id_>")
     def update(id_):
-        data = request.get_json()
+        body = request.get_json()
+        body["id"] = id_
 
-        if not data:
+        if not body:
             return jsonify({"error": "Missing JSON body"}), 400
 
-        session = SessionLocal()
-        demo = session.query(DemoModel).filter_by(id=id_).first()
+        demo = Demo.from_dict(body)
+        _demo_service.update(demo)
 
-        if not demo:
-            session.close()
-            return jsonify({"error": "Demo not found"}), 404
-
-        if "name" in data:
-            demo.name = data["name"]
-
-        session.commit()
-        session.refresh(demo)
-        session.close()
-
-        return jsonify(Demo(id_=demo.id, name=demo.name)), 200
+        return jsonify(demo), 200
 
     @staticmethod
     @demo_controller.delete("/<int:id_>")
     def delete(id_):
-        session = SessionLocal()
-        demo = session.query(DemoModel).filter_by(id=id_).first()
+        demo = _demo_service.delete_by_id(id_)
 
         if not demo:
-            session.close()
             return jsonify({"error": "Demo not found"}), 404
-
-        session.delete(demo)
-        session.commit()
-        session.close()
 
         return jsonify({"message": "Deleted successfully"}), 200

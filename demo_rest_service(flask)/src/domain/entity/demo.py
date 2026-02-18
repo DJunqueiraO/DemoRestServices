@@ -1,4 +1,9 @@
+import dataclasses
+
+
+@dataclasses.dataclass(frozen=True)
 class Demo(dict[str, any]):
+
     def __init__(self, id_=None, name=None):
         super().__init__()
         self["id"] = id_
